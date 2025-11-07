@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmAssist Pro - Agricultural Support System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .laptop-container {
+            width: 1200px;
+            height: 800px;
+            background: #2c3e50;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .taskbar {
+            background: #34495e;
+            color: white;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .control-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .close { background: #e74c3c; }
+        .minimize { background: #f39c12; }
+        .maximize { background: #27ae60; }
+        
+        .main-content {
+            display: flex;
+            height: calc(100% - 40px);
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-right: 1px solid #34495e;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #3498db;
+        }
+        
+        .nav-item {
+            padding: 15px 0;
+            cursor: pointer;
+            border-bottom: 1px solid #34495e;
+            transition: background 0.3s;
+        }
+        
+        .nav-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .nav-item.active {
+            background: #3498db;
+            margin: 0 -20px;
+            padding-left: 20px;
+        }
+        
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            background: white;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            font-size: 28px;
+            color: #2c3e50;
+            font-weight: 300;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .input-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px dashed #bdc3c7;
+            text-align: center;
+        }
+        
+        .input-options {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .input-option {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #ecf0f1;
+            width: 200px;
+        }
+        
+        .input-option:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+        }
+        
+        .input-option.active {
+            border-color: #3498db;
+            background: #e8f4f8;
+        }
+        
+        .option-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .option-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .option-desc {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            resize: vertical;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .submit-btn {
+            background: #3498db;
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #2980b9;
+        }
+        
+        .response-section {
+            background: white;
+            border: 1px solid #ecf0f1;
+            border-radius: 15px;
+            padding: 25px;
+            min-height: 200px;
+        }
+        
+        .response-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .ai-badge {
+            background: #27ae60;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .response-content {
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .expert-alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed #bdc3c7;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        
+        .file-drop-zone.dragover {
+            border-color: #3498db;
+            background: #e8f4f8;
+        }
+    </style>
+</head>
+<body>
+    <div class="laptop-container">
+        <div class="screen">
+            <div class="taskbar">
+                <div class="window-controls">
+                    <div class="control-btn close"></div>
+                    <div class="control-btn minimize"></div>
+                    <div class="control-btn maximize"></div>
+                </div>
+                <div>FarmAssist Pro - Agricultural Support System</div>
+                <div>12:34 PM</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="sidebar">
+                    <div class="logo">🌾 FarmAssist</div>
+                    <div class="nav-item active">📝 New Query</div>
+                    <div class="nav-item">💬 Chat History</div>
+                    <div class="nav-item">📊 Analytics</div>
+                    <div class="nav-item">👨‍🌾 Expert Connect</div>
+                    <div class="nav-item">📚 Knowledge Base</div>
+                    <div class="nav-item">⚙️ Settings</div>
+                </div>
+                
+                <div class="content-area">
+                    <div class="header">
+                        <div class="title">Agricultural Assistant</div>
+                        <div class="user-info">
+                            <div class="user-avatar">RK</div>
+                            <div>
+                                <div style="font-weight: bold;">Ravi Kumar</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">Farmer</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-section">
+                        <h3 style="margin-bottom: 20px; color: #2c3e50;">How can I help you today?</h3>
+                        
+                        <div class="input-options">
+                            <div class="input-option active" onclick="selectInput('text')">
+                                <div class="option-icon">💬</div>
+                                <div class="option-title">Text Query</div>
+                                <div class="option-desc">Ask questions about farming</div>
+                            </div>
+                            
+                            <div class="input-option" onclick="selectInput('voice')">
+                                <div class="option-icon">🎤</div>
+                                <div class="option-title">Voice Input</div>
+                                <div class="option-desc">Speak your question</div>
+                            </div>
+                            
+                            <div class="input-option" onclick="selectInput('image')">
+                                <div class="option-icon">📸</div>
+                                <div class="option-title">Crop Image</div>
+                                <div class="option-desc">Upload crop photos</div>
+                            </div>
+                        </div>
+                        
+                        <div id="text-input" class="input-method">
+                            <textarea class="text-input" placeholder="Type your farming question here... (e.g., 'My tomato plants have yellow leaves', 'Best time to plant wheat in Punjab')" rows="4"></textarea>
+                        </div>
+                        
+                        <div id="voice-input" class="input-method" style="display: none;">
+                            <div style="padding: 40px; background: white; border-radius: 10px; margin-bottom: 20px;">
+                                <div style="font-size: 48px; margin-bottom: 15px;">🎤</div>
+                                <div style="font-size: 18px; color: #2c3e50; margin-bottom: 10px;">Click to start recording</div>
+                                <div style="font-size: 14px; color: #7f8c8d;">Speak clearly about your farming question</div>
+                            </div>
+                        </div>
+                        
+                        <div id="image-input" class="input-method" style="display: none;">
+                            <div class="file-drop-zone">
+                                <div style="font-size: 48px; margin-bottom: 15px;">📸</div>
+                                <div style="font-size: 18px; color: #2c3e50; margin-bottom: 10px;">Drop crop images here or click to browse</div>
+                                <div style="font-size: 14px; color: #7f8c8d;">Supported formats: JPG, PNG, HEIC</div>
+                            </div>
+                        </div>
+                        
+                        <button class="submit-btn" onclick="submitQuery()">Analyze & Get Solution</button>
+                    </div>
+                    
+                    <div class="response-section">
+                        <div class="response-header">
+                            <h3 style="color: #2c3e50;">AI Response</h3>
+                            <div class="ai-badge">Gemini AI</div>
+                        </div>
+                        
+                        <div class="response-content">
+                            <p><strong>Analysis:</strong> Based on your description of yellow leaves on tomato plants, this appears to be a nutrient deficiency issue, likely nitrogen or magnesium deficiency.</p>
+                            
+                            <p style="margin-top: 15px;"><strong>Recommended Solution:</strong></p>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Apply balanced NPK fertilizer (10-10-10) at 2-3 tablespoons per plant</li>
+                                <li>Ensure proper watering - soil should be moist but not waterlogged</li>
+                                <li>Check soil pH (should be 6.0-6.8 for tomatoes)</li>
+                                <li>Consider foliar spray with liquid fertilizer for quick results</li>
+                            </ul>
+                            
+                            <div class="expert-alert">
+                                <strong>⚠️ Expert Consultation Available:</strong> If symptoms persist after 1 week, our agricultural experts can provide personalized guidance.
+                            </div>
+                        </div>
+                        
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <span style="color: #27ae60; font-size: 14px;">Response saved to Firebase • Expert escalation available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function selectInput(type) {
+            // Hide all input methods
+            document.querySelectorAll('.input-method').forEach(method => {
+                method.style.display = 'none';
+            });
+            
+            // Remove active class from all options
+            document.querySelectorAll('.input-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            // Show selected input method
+            document.getElementById(type + '-input').style.display = 'block';
+            
+            // Add active class to selected option
+            event.target.closest('.input-option').classList.add('active');
+        }
+        
+        function submitQuery() {
+            // Simulate processing
+            const responseContent = document.querySelector('.response-content');
+            responseContent.innerHTML = '<div style="text-align: center; padding: 40px;"><div style="font-size: 24px; margin-bottom: 15px;">🤖</div><div>Processing your query with Gemini AI...</div></div>';
+            
+            // Simulate response after 2 seconds
+            setTimeout(() => {
+                responseContent.innerHTML = `
+                    <p><strong>Analysis:</strong> Based on your query, I've analyzed the information using advanced agricultural AI models.</p>
+                    
+                    <p style="margin-top: 15px;"><strong>Recommended Solution:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Detailed farming recommendations based on your specific situation</li>
+                        <li>Weather-appropriate timing for agricultural activities</li>
+                        <li>Crop-specific nutrient management guidelines</li>
+                        <li>Pest and disease prevention strategies</li>
+                    </ul>
+                    
+                    <div class="expert-alert">
+                        <strong>⚠️ Expert Consultation Available:</strong> Need more detailed guidance? Connect with our agricultural experts for personalized advice.
+                    </div>
+                `;
+            }, 2000);
+        }
+        
+        // File drop functionality
+        const fileDropZone = document.querySelector('.file-drop-zone');
+        
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+        
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('dragover');
+        });
+        
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            // Handle file drop
+            console.log('Files dropped:', e.dataTransfer.files);
+        });
+    </script>
+</body>
+</html>
