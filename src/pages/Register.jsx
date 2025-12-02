@@ -34,22 +34,20 @@ export default function Register() {
     }
 
     try {
-      const response = await axios.post('http://localhost:9000/api/user/register', {
+      const response = await axios.post('http://localhost:9000/api/auth/register', {
         name,
         email,
-        phone,
         password,
-        role,
       });
 
-      if (response.data.includes('success')) {
+      if (response.data.message === 'User registered successfully') {
         alert('Registration successful!');
         navigate('/login');
       } else {
-        setErrorMessage(response.data);
+        setErrorMessage('Registration failed');
       }
     } catch (error) {
-      setErrorMessage('Failed to register. Please try again later.');
+      setErrorMessage(error.response?.data?.error || 'Failed to register. Please try again later.');
     }
   };
 

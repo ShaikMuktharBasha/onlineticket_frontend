@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import HotelDetail from './pages/HotelDetail';
 import AdminDashboard from './pages/AdminDashboard';
+import BookingDashboard from './pages/BookingDashboard';
+import PaymentDashboard from './pages/PaymentDashboard';
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/hotel/:name" element={<HotelDetail />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/booking-dashboard" element={<BookingDashboard />} />
+          <Route path="/payment-dashboard" element={<PaymentDashboard />} />
         </Routes>
       </main>
       <Footer />

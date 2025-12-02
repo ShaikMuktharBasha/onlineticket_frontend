@@ -25,14 +25,16 @@ export default function Header() {
         <Link to="/cars">Cars</Link>
         <Link to="/booking">Booking</Link>
         <Link to="/payment">Payment</Link>
+        <Link to="/booking-dashboard">Booking Dashboard</Link>
+        <Link to="/payment-dashboard">Payment Dashboard</Link>
 
         {role === 'ADMIN' && <Link to="/admin">Admin Dashboard</Link>}
         {token ? (
           <button onClick={handleLogout} className="btn">Logout</button>
         ) : (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
+            <Link to="/login" className="auth-link">Login</Link>
+            <Link to="/register" className="auth-link">Register</Link>
           </>
         )}
       </nav>

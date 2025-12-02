@@ -32,22 +32,21 @@ export default function Login() {
     }
 
     try {
-      const response = await axios.post('http://localhost:9000/api/user/login', {
+      const response = await axios.post('http://localhost:9000/api/auth/login', {
         email,
         password,
-        role: selectedRole,
       });
 
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('role', response.data.role);
+      localStorage.setItem('role', selectedRole);
       alert('Login successful!');
-      if (response.data.role === 'ADMIN') {
+      if (selectedRole === 'ADMIN') {
         navigate('/admin');
       } else {
         navigate('/');
       }
     } catch (error) {
-      setError(error.response?.data || 'Login failed. Please try again.');
+      setError(error.response?.data?.error || 'Login failed. Please try again.');
     }
   };
 
