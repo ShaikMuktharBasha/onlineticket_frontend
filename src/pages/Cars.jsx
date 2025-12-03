@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import '../style/main.css';
 
 export default function Cars() {
@@ -22,13 +23,13 @@ export default function Cars() {
         const token = localStorage.getItem('token');
 
         // Fetch cars
-        const carsResponse = await axios.get('http://localhost:9000/api/cars', {
+        const carsResponse = await axios.get(`${API_BASE_URL}/api/cars`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCars(carsResponse.data);
 
         // Fetch locations
-        const locationsResponse = await axios.get('http://localhost:9000/api/locations', {
+        const locationsResponse = await axios.get(`${API_BASE_URL}/api/locations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setLocations(locationsResponse.data);
@@ -66,7 +67,7 @@ export default function Cars() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:9000/api/booking', {
+      await axios.post(`${API_BASE_URL}/api/bookings`, {
         type: 'CAR',
         itemId: selectedCar.id,
         numPersons,

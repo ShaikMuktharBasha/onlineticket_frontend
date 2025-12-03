@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from '../config';
 import '../style/main.css';
 
 export default function Booking() {
@@ -19,7 +20,7 @@ export default function Booking() {
           return;
         }
 
-        const res = await axios.get("http://localhost:9000/api/booking", {
+        const res = await axios.get(`${API_BASE_URL}/api/bookings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

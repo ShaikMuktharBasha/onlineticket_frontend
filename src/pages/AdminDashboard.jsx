@@ -1,503 +1,512 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../style/main.css';
+import { API_BASE_URL } from '../config';
+import '../style/admin.css';
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
   const [stays, setStays] = useState([]);
   const [flights, setFlights] = useState([]);
   const [cars, setCars] = useState([]);
-  const [newStay, setNewStay] = useState({ name: '', location: '', rating: 0, price: 0, image: '' });
+  const [bookings, setBookings] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [payments, setPayments] = useState([]);
+
+  // Form states
+  const [newStay, setNewStay] = useState({
+    name: '', location: '', rating: 0, price_per_night: 0, description: '', image: ''
+  });
   const [newFlight, setNewFlight] = useState({
-    route: '', fromLocation: '', toLocation: '', airline: '', price: 0,
-    duration: '', departure: '', arrival: '', availableSeats: 0, image: ''
+    airline: '', flight_number: '', origin: '', destination: '',
+    departure_time: '', arrival_time: '', price: 0, available_seats: 0
   });
   const [newCar, setNewCar] = useState({
-    name: '', price: 0, duration: '', availability: 'Available', seats: 0,
-    transmission: '', rating: 0, image: ''
+    model: '', brand: '', location: '', price_per_day: 0, car_type: '',
+    description: '', seating_capacity: 0, available_cars: 0
   });
+
   const [editStay, setEditStay] = useState(null);
   const [editFlight, setEditFlight] = useState(null);
   const [editCar, setEditCar] = useState(null);
+  const [showForm, setShowForm] = useState({ stay: false, flight: false, car: false });
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [staysRes, flightsRes, carsRes] = await Promise.all([
-          axios.get('http://localhost:9000/api/admin/stay', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:9000/api/admin/flight', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:9000/api/admin/car', { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        setStays(staysRes.data);
-        setFlights(flightsRes.data);
-        setCars(carsRes.data);
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      }
-    };
-    fetchData();
+    fetchAllData();
   }, []);
+
+  const fetchAllData = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const [staysRes, flightsRes, carsRes, bookingsRes, usersRes, paymentsRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/hotels`, { headers }),
+        axios.get(`${API_BASE_URL}/api/flights`, { headers }),
+        axios.get(`${API_BASE_URL}/api/cars`, { headers }),
+        axios.get(`${API_BASE_URL}/api/bookings`, { headers }),
+        axios.get(`${API_BASE_URL}/api/users`, { headers }),
+        axios.get(`${API_BASE_URL}/api/payments`, { headers }),
+      ]);
+      setStays(staysRes.data);
+      setFlights(flightsRes.data);
+      setCars(carsRes.data);
+      setBookings(bookingsRes.data);
+      setUsers(usersRes.data);
+      setPayments(paymentsRes.data);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    }
+  };
 
   const handleAddStay = async () => {
     try {
-      await axios.post('http://localhost:9000/api/admin/stay', newStay, {
+      await axios.post(`${API_BASE_URL}/api/hotels`, newStay, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setStays([...stays, { ...newStay, id: Date.now() }]);
-      setNewStay({ name: '', location: '', rating: 0, price: 0, image: '' });
-      alert('Stay added successfully!');
+      setNewStay({ name: '', location: '', rating: 0, price_per_night: 0, description: '', image: '' });
+      setShowForm({ ...showForm, stay: false });
+      fetchAllData();
     } catch (error) {
-      alert('Failed to add stay.');
+      console.error('Failed to add stay:', error);
     }
   };
 
   const handleAddFlight = async () => {
     try {
-      await axios.post('http://localhost:9000/api/admin/flight', newFlight, {
+      await axios.post(`${API_BASE_URL}/api/flights`, newFlight, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFlights([...flights, { ...newFlight, id: Date.now() }]);
       setNewFlight({
-        route: '', fromLocation: '', toLocation: '', airline: '', price: 0,
-        duration: '', departure: '', arrival: '', availableSeats: 0, image: ''
+        airline: '', flight_number: '', origin: '', destination: '',
+        departure_time: '', arrival_time: '', price: 0, available_seats: 0
       });
-      alert('Flight added successfully!');
+      setShowForm({ ...showForm, flight: false });
+      fetchAllData();
     } catch (error) {
-      alert('Failed to add flight.');
+      console.error('Failed to add flight:', error);
     }
   };
 
   const handleAddCar = async () => {
     try {
-      await axios.post('http://localhost:9000/api/admin/car', newCar, {
+      await axios.post(`${API_BASE_URL}/api/cars`, newCar, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCars([...cars, { ...newCar, id: Date.now() }]);
       setNewCar({
-        name: '', price: 0, duration: '', availability: 'Available', seats: 0,
-        transmission: '', rating: 0, image: ''
+        model: '', brand: '', location: '', price_per_day: 0, car_type: '',
+        description: '', seating_capacity: 0, available_cars: 0
       });
-      alert('Car added successfully!');
+      setShowForm({ ...showForm, car: false });
+      fetchAllData();
     } catch (error) {
-      alert('Failed to add car.');
+      console.error('Failed to add car:', error);
     }
   };
 
-  const handleUpdateStay = async () => {
+  const handleDelete = async (type, id) => {
+    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+
     try {
-      await axios.put(`http://localhost:9000/api/admin/stay/${editStay.id}`, editStay, {
+      await axios.delete(`${API_BASE_URL}/api/${type}s/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setStays(stays.map((stay) => (stay.id === editStay.id ? editStay : stay)));
-      setEditStay(null);
-      alert('Stay updated successfully!');
+      fetchAllData();
     } catch (error) {
-      alert('Failed to update stay.');
+      console.error(`Failed to delete ${type}:`, error);
     }
   };
 
-  const handleUpdateFlight = async () => {
-    try {
-      await axios.put(`http://localhost:9000/api/admin/flight/${editFlight.id}`, editFlight, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFlights(flights.map((flight) => (flight.id === editFlight.id ? editFlight : flight)));
-      setEditFlight(null);
-      alert('Flight updated successfully!');
-    } catch (error) {
-      alert('Failed to update flight.');
-    }
-  };
+  const renderOverview = () => (
+    <div className="overview-grid">
+      <div className="stat-card">
+        <div className="stat-icon">🏨</div>
+        <div className="stat-content">
+          <h3>{stays.length}</h3>
+          <p>Total Hotels</p>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon">✈️</div>
+        <div className="stat-content">
+          <h3>{flights.length}</h3>
+          <p>Total Flights</p>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon">🚗</div>
+        <div className="stat-content">
+          <h3>{cars.length}</h3>
+          <p>Total Cars</p>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon">📋</div>
+        <div className="stat-content">
+          <h3>{bookings.length}</h3>
+          <p>Total Bookings</p>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon">👥</div>
+        <div className="stat-content">
+          <h3>{users.length}</h3>
+          <p>Total Users</p>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon">💰</div>
+        <div className="stat-content">
+          <h3>${payments.reduce((sum, p) => sum + p.amount, 0)}</h3>
+          <p>Total Revenue</p>
+        </div>
+      </div>
+    </div>
+  );
 
-  const handleUpdateCar = async () => {
-    try {
-      await axios.put(`http://localhost:9000/api/admin/car/${editCar.id}`, editCar, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCars(cars.map((car) => (car.id === editCar.id ? editCar : car)));
-      setEditCar(null);
-      alert('Car updated successfully!');
-    } catch (error) {
-      alert('Failed to update car.');
-    }
-  };
+  const renderStays = () => (
+    <div className="management-section">
+      <div className="section-header">
+        <h2>Hotel Management</h2>
+        <button
+          className="btn-primary"
+          onClick={() => setShowForm({ ...showForm, stay: !showForm.stay })}
+        >
+          {showForm.stay ? 'Cancel' : '+ Add Hotel'}
+        </button>
+      </div>
 
-  const handleDeleteStay = async (id) => {
-    try {
-      await axios.delete(`http://localhost:9000/api/admin/stay/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setStays(stays.filter((stay) => stay.id !== id));
-      alert('Stay deleted successfully!');
-    } catch (error) {
-      alert('Failed to delete stay.');
-    }
-  };
+      {showForm.stay && (
+        <div className="form-card">
+          <h3>Add New Hotel</h3>
+          <div className="form-grid">
+            <input
+              type="text"
+              placeholder="Hotel Name"
+              value={newStay.name}
+              onChange={(e) => setNewStay({ ...newStay, name: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Location"
+              value={newStay.location}
+              onChange={(e) => setNewStay({ ...newStay, location: e.target.value })}
+            />
+            <input
+              type="number"
+              placeholder="Rating (1-5)"
+              value={newStay.rating}
+              onChange={(e) => setNewStay({ ...newStay, rating: parseFloat(e.target.value) })}
+            />
+            <input
+              type="number"
+              placeholder="Price per night"
+              value={newStay.price_per_night}
+              onChange={(e) => setNewStay({ ...newStay, price_per_night: parseFloat(e.target.value) })}
+            />
+            <textarea
+              placeholder="Description"
+              value={newStay.description}
+              onChange={(e) => setNewStay({ ...newStay, description: e.target.value })}
+            />
+            <input
+              type="url"
+              placeholder="Image URL"
+              value={newStay.image}
+              onChange={(e) => setNewStay({ ...newStay, image: e.target.value })}
+            />
+          </div>
+          <div className="form-actions">
+            <button className="btn-primary" onClick={handleAddStay}>Add Hotel</button>
+            <button className="btn-secondary" onClick={() => setShowForm({ ...showForm, stay: false })}>Cancel</button>
+          </div>
+        </div>
+      )}
 
-  const handleDeleteFlight = async (id) => {
-    try {
-      await axios.delete(`http://localhost:9000/api/admin/flight/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFlights(flights.filter((flight) => flight.id !== id));
-      alert('Flight deleted successfully!');
-    } catch (error) {
-      alert('Failed to delete flight.');
-    }
-  };
+      <div className="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Location</th>
+              <th>Rating</th>
+              <th>Price/Night</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stays.map((stay) => (
+              <tr key={stay.id}>
+                <td>{stay.name}</td>
+                <td>{stay.location}</td>
+                <td>{stay.rating} ⭐</td>
+                <td>${stay.price_per_night}</td>
+                <td>
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-delete" onClick={() => handleDelete('hotel', stay.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
-  const handleDeleteCar = async (id) => {
-    try {
-      await axios.delete(`http://localhost:9000/api/admin/car/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCars(cars.filter((car) => car.id !== id));
-      alert('Car deleted successfully!');
-    } catch (error) {
-      alert('Failed to delete car.');
-    }
-  };
+  const renderFlights = () => (
+    <div className="management-section">
+      <div className="section-header">
+        <h2>Flight Management</h2>
+        <button
+          className="btn-primary"
+          onClick={() => setShowForm({ ...showForm, flight: !showForm.flight })}
+        >
+          {showForm.flight ? 'Cancel' : '+ Add Flight'}
+        </button>
+      </div>
+
+      {showForm.flight && (
+        <div className="form-card">
+          <h3>Add New Flight</h3>
+          <div className="form-grid">
+            <input
+              type="text"
+              placeholder="Airline"
+              value={newFlight.airline}
+              onChange={(e) => setNewFlight({ ...newFlight, airline: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Flight Number"
+              value={newFlight.flight_number}
+              onChange={(e) => setNewFlight({ ...newFlight, flight_number: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Origin"
+              value={newFlight.origin}
+              onChange={(e) => setNewFlight({ ...newFlight, origin: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Destination"
+              value={newFlight.destination}
+              onChange={(e) => setNewFlight({ ...newFlight, destination: e.target.value })}
+            />
+            <input
+              type="datetime-local"
+              placeholder="Departure Time"
+              value={newFlight.departure_time}
+              onChange={(e) => setNewFlight({ ...newFlight, departure_time: e.target.value })}
+            />
+            <input
+              type="datetime-local"
+              placeholder="Arrival Time"
+              value={newFlight.arrival_time}
+              onChange={(e) => setNewFlight({ ...newFlight, arrival_time: e.target.value })}
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              value={newFlight.price}
+              onChange={(e) => setNewFlight({ ...newFlight, price: parseFloat(e.target.value) })}
+            />
+            <input
+              type="number"
+              placeholder="Available Seats"
+              value={newFlight.available_seats}
+              onChange={(e) => setNewFlight({ ...newFlight, available_seats: parseInt(e.target.value) })}
+            />
+          </div>
+          <div className="form-actions">
+            <button className="btn-primary" onClick={handleAddFlight}>Add Flight</button>
+            <button className="btn-secondary" onClick={() => setShowForm({ ...showForm, flight: false })}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Flight</th>
+              <th>Route</th>
+              <th>Departure</th>
+              <th>Price</th>
+              <th>Seats</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {flights.map((flight) => (
+              <tr key={flight.id}>
+                <td>{flight.airline} {flight.flight_number}</td>
+                <td>{flight.origin} → {flight.destination}</td>
+                <td>{new Date(flight.departure_time).toLocaleString()}</td>
+                <td>${flight.price}</td>
+                <td>{flight.available_seats}</td>
+                <td>
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-delete" onClick={() => handleDelete('flight', flight.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderCars = () => (
+    <div className="management-section">
+      <div className="section-header">
+        <h2>Car Management</h2>
+        <button
+          className="btn-primary"
+          onClick={() => setShowForm({ ...showForm, car: !showForm.car })}
+        >
+          {showForm.car ? 'Cancel' : '+ Add Car'}
+        </button>
+      </div>
+
+      {showForm.car && (
+        <div className="form-card">
+          <h3>Add New Car</h3>
+          <div className="form-grid">
+            <input
+              type="text"
+              placeholder="Model"
+              value={newCar.model}
+              onChange={(e) => setNewCar({ ...newCar, model: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Brand"
+              value={newCar.brand}
+              onChange={(e) => setNewCar({ ...newCar, brand: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Location"
+              value={newCar.location}
+              onChange={(e) => setNewCar({ ...newCar, location: e.target.value })}
+            />
+            <input
+              type="number"
+              placeholder="Price per day"
+              value={newCar.price_per_day}
+              onChange={(e) => setNewCar({ ...newCar, price_per_day: parseFloat(e.target.value) })}
+            />
+            <select
+              value={newCar.car_type}
+              onChange={(e) => setNewCar({ ...newCar, car_type: e.target.value })}
+            >
+              <option value="">Select Type</option>
+              <option value="Sedan">Sedan</option>
+              <option value="SUV">SUV</option>
+              <option value="Sports">Sports</option>
+              <option value="Electric">Electric</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Seating Capacity"
+              value={newCar.seating_capacity}
+              onChange={(e) => setNewCar({ ...newCar, seating_capacity: parseInt(e.target.value) })}
+            />
+            <input
+              type="number"
+              placeholder="Available Cars"
+              value={newCar.available_cars}
+              onChange={(e) => setNewCar({ ...newCar, available_cars: parseInt(e.target.value) })}
+            />
+            <textarea
+              placeholder="Description"
+              value={newCar.description}
+              onChange={(e) => setNewCar({ ...newCar, description: e.target.value })}
+            />
+          </div>
+          <div className="form-actions">
+            <button className="btn-primary" onClick={handleAddCar}>Add Car</button>
+            <button className="btn-secondary" onClick={() => setShowForm({ ...showForm, car: false })}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Car</th>
+              <th>Location</th>
+              <th>Type</th>
+              <th>Price/Day</th>
+              <th>Capacity</th>
+              <th>Available</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cars.map((car) => (
+              <tr key={car.id}>
+                <td>{car.brand} {car.model}</td>
+                <td>{car.location}</td>
+                <td>{car.car_type}</td>
+                <td>${car.price_per_day}</td>
+                <td>{car.seating_capacity} seats</td>
+                <td>{car.available_cars}</td>
+                <td>
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-delete" onClick={() => handleDelete('car', car.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="page">
-      <h2>Admin Dashboard</h2>
-
-      {/* Manage Stays */}
-      <h3>Manage Stays</h3>
-      <div className="form">
-        <input
-          type="text"
-          placeholder="Name"
-          value={newStay.name}
-          onChange={(e) => setNewStay({ ...newStay, name: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Location"
-          value={newStay.location}
-          onChange={(e) => setNewStay({ ...newStay, location: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Rating"
-          value={newStay.rating}
-          onChange={(e) => setNewStay({ ...newStay, rating: parseFloat(e.target.value) })}
-        />
-        <input
-          type="number"
-          placeholder="Price"
-          value={newStay.price}
-          onChange={(e) => setNewStay({ ...newStay, price: parseFloat(e.target.value) })}
-        />
-        <input
-          type="text"
-          placeholder="Image URL"
-          value={newStay.image}
-          onChange={(e) => setNewStay({ ...newStay, image: e.target.value })}
-        />
-        <button className="btn" onClick={handleAddStay}>Add Stay</button>
-      </div>
-      <div className="card-list">
-        {stays.map((stay) => (
-          <div key={stay.id} className="card">
-            {editStay && editStay.id === stay.id ? (
-              <>
-                <input
-                  type="text"
-                  value={editStay.name}
-                  onChange={(e) => setEditStay({ ...editStay, name: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editStay.location}
-                  onChange={(e) => setEditStay({ ...editStay, location: e.target.value })}
-                />
-                <input
-                  type="number"
-                  value={editStay.rating}
-                  onChange={(e) => setEditStay({ ...editStay, rating: parseFloat(e.target.value) })}
-                />
-                <input
-                  type="number"
-                  value={editStay.price}
-                  onChange={(e) => setEditStay({ ...editStay, price: parseFloat(e.target.value) })}
-                />
-                <input
-                  type="text"
-                  value={editStay.image}
-                  onChange={(e) => setEditStay({ ...editStay, image: e.target.value })}
-                />
-                <button className="btn" onClick={handleUpdateStay}>Save</button>
-                <button className="btn btn-outline" onClick={() => setEditStay(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                <h3>{stay.name}</h3>
-                <p>Location: {stay.location}</p>
-                <p>Rating: {stay.rating}</p>
-                <p>Price: ₹{stay.price}</p>
-                <img src={stay.image} alt={stay.name} style={{ width: '100px' }} />
-                <button className="btn" onClick={() => setEditStay(stay)}>Edit</button>
-                <button className="btn btn-outline" onClick={() => handleDeleteStay(stay.id)}>Delete</button>
-              </>
-            )}
-          </div>
-        ))}
+    <div className="admin-dashboard">
+      <div className="admin-header">
+        <h1>🛠️ Admin Dashboard</h1>
+        <p>Manage your travel platform efficiently</p>
       </div>
 
-      {/* Manage Flights */}
-      <h3>Manage Flights</h3>
-      <div className="form">
-        <input
-          type="text"
-          placeholder="Route"
-          value={newFlight.route}
-          onChange={(e) => setNewFlight({ ...newFlight, route: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="From"
-          value={newFlight.fromLocation}
-          onChange={(e) => setNewFlight({ ...newFlight, fromLocation: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="To"
-          value={newFlight.toLocation}
-          onChange={(e) => setNewFlight({ ...newFlight, toLocation: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Airline"
-          value={newFlight.airline}
-          onChange={(e) => setNewFlight({ ...newFlight, airline: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Price"
-          value={newFlight.price}
-          onChange={(e) => setNewFlight({ ...newFlight, price: parseFloat(e.target.value) })}
-        />
-        <input
-          type="text"
-          placeholder="Duration"
-          value={newFlight.duration}
-          onChange={(e) => setNewFlight({ ...newFlight, duration: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Departure"
-          value={newFlight.departure}
-          onChange={(e) => setNewFlight({ ...newFlight, departure: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Arrival"
-          value={newFlight.arrival}
-          onChange={(e) => setNewFlight({ ...newFlight, arrival: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Available Seats"
-          value={newFlight.availableSeats}
-          onChange={(e) => setNewFlight({ ...newFlight, availableSeats: parseInt(e.target.value) })}
-        />
-        <input
-          type="text"
-          placeholder="Image URL"
-          value={newFlight.image}
-          onChange={(e) => setNewFlight({ ...newFlight, image: e.target.value })}
-        />
-        <button className="btn" onClick={handleAddFlight}>Add Flight</button>
-      </div>
-      <div className="card-list">
-        {flights.map((flight) => (
-          <div key={flight.id} className="card">
-            {editFlight && editFlight.id === flight.id ? (
-              <>
-                <input
-                  type="text"
-                  value={editFlight.route}
-                  onChange={(e) => setEditFlight({ ...editFlight, route: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.fromLocation}
-                  onChange={(e) => setEditFlight({ ...editFlight, fromLocation: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.toLocation}
-                  onChange={(e) => setEditFlight({ ...editFlight, toLocation: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.airline}
-                  onChange={(e) => setEditFlight({ ...editFlight, airline: e.target.value })}
-                />
-                <input
-                  type="number"
-                  value={editFlight.price}
-                  onChange={(e) => setEditFlight({ ...editFlight, price: parseFloat(e.target.value) })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.duration}
-                  onChange={(e) => setEditFlight({ ...editFlight, duration: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.departure}
-                  onChange={(e) => setEditFlight({ ...editFlight, departure: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.arrival}
-                  onChange={(e) => setEditFlight({ ...editFlight, arrival: e.target.value })}
-                />
-                <input
-                  type="number"
-                  value={editFlight.availableSeats}
-                  onChange={(e) => setEditFlight({ ...editFlight, availableSeats: parseInt(e.target.value) })}
-                />
-                <input
-                  type="text"
-                  value={editFlight.image}
-                  onChange={(e) => setEditFlight({ ...editFlight, image: e.target.value })}
-                />
-                <button className="btn" onClick={handleUpdateFlight}>Save</button>
-                <button className="btn btn-outline" onClick={() => setEditFlight(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                <h3>{flight.route}</h3>
-                <p>Airline: {flight.airline}</p>
-                <p>Price: ₹{flight.price}</p>
-                <p>Seats: {flight.availableSeats}</p>
-                <img src={flight.image} alt={flight.route} style={{ width: '100px' }} />
-                <button className="btn" onClick={() => setEditFlight(flight)}>Edit</button>
-                <button className="btn btn-outline" onClick={() => handleDeleteFlight(flight.id)}>Delete</button>
-              </>
-            )}
-          </div>
-        ))}
+      <div className="admin-nav">
+        <button
+          className={activeTab === 'overview' ? 'active' : ''}
+          onClick={() => setActiveTab('overview')}
+        >
+          📊 Overview
+        </button>
+        <button
+          className={activeTab === 'stays' ? 'active' : ''}
+          onClick={() => setActiveTab('stays')}
+        >
+          🏨 Hotels
+        </button>
+        <button
+          className={activeTab === 'flights' ? 'active' : ''}
+          onClick={() => setActiveTab('flights')}
+        >
+          ✈️ Flights
+        </button>
+        <button
+          className={activeTab === 'cars' ? 'active' : ''}
+          onClick={() => setActiveTab('cars')}
+        >
+          🚗 Cars
+        </button>
       </div>
 
-      {/* Manage Cars */}
-      <h3>Manage Cars</h3>
-      <div className="form">
-        <input
-          type="text"
-          placeholder="Name"
-          value={newCar.name}
-          onChange={(e) => setNewCar({ ...newCar, name: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Price"
-          value={newCar.price}
-          onChange={(e) => setNewCar({ ...newCar, price: parseFloat(e.target.value) })}
-        />
-        <input
-          type="text"
-          placeholder="Duration"
-          value={newCar.duration}
-          onChange={(e) => setNewCar({ ...newCar, duration: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Availability"
-          value={newCar.availability}
-          onChange={(e) => setNewCar({ ...newCar, availability: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Seats"
-          value={newCar.seats}
-          onChange={(e) => setNewCar({ ...newCar, seats: parseInt(e.target.value) })}
-        />
-        <input
-          type="text"
-          placeholder="Transmission"
-          value={newCar.transmission}
-          onChange={(e) => setNewCar({ ...newCar, transmission: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Rating"
-          value={newCar.rating}
-          onChange={(e) => setNewCar({ ...newCar, rating: parseFloat(e.target.value) })}
-        />
-        <input
-          type="text"
-          placeholder="Image URL"
-          value={newCar.image}
-          onChange={(e) => setNewCar({ ...newCar, image: e.target.value })}
-        />
-        <button className="btn" onClick={handleAddCar}>Add Car</button>
-      </div>
-      <div className="card-list">
-        {cars.map((car) => (
-          <div key={car.id} className="card">
-            {editCar && editCar.id === car.id ? (
-              <>
-                <input
-                  type="text"
-                  value={editCar.name}
-                  onChange={(e) => setEditCar({ ...editCar, name: e.target.value })}
-                />
-                <input
-                  type="number"
-                  value={editCar.price}
-                  onChange={(e) => setEditCar({ ...editCar, price: parseFloat(e.target.value) })}
-                />
-                <input
-                  type="text"
-                  value={editCar.duration}
-                  onChange={(e) => setEditCar({ ...editCar, duration: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={editCar.availability}
-                  onChange={(e) => setEditCar({ ...editCar, availability: e.target.value })}
-                />
-                <input
-                  type="number"
-                  value={editCar.seats}
-                  onChange={(e) => setEditCar({ ...editCar, seats: parseInt(e.target.value) })}
-                />
-                <input
-                  type="text"
-                  value={editCar.transmission}
-                  onChange={(e) => setEditCar({ ...editCar, transmission: e.target.value })}
-                />
-                <input
-                  type="number"
-                  value={editCar.rating}
-                  onChange={(e) => setEditCar({ ...editCar, rating: parseFloat(e.target.value) })}
-                />
-                <input
-                  type="text"
-                  value={editCar.image}
-                  onChange={(e) => setEditCar({ ...editCar, image: e.target.value })}
-                />
-                <button className="btn" onClick={handleUpdateCar}>Save</button>
-                <button className="btn btn-outline" onClick={() => setEditCar(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                <h3>{car.name}</h3>
-                <p>Price: ₹{car.price}</p>
-                <p>Seats: {car.seats}</p>
-                <p>Availability: {car.availability}</p>
-                <img src={car.image} alt={car.name} style={{ width: '100px' }} />
-                <button className="btn" onClick={() => setEditCar(car)}>Edit</button>
-                <button className="btn btn-outline" onClick={() => handleDeleteCar(car.id)}>Delete</button>
-              </>
-            )}
-          </div>
-        ))}
+      <div className="admin-content">
+        {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'stays' && renderStays()}
+        {activeTab === 'flights' && renderFlights()}
+        {activeTab === 'cars' && renderCars()}
       </div>
     </div>
   );

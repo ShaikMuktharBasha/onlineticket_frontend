@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import '../style/main.css';
 
 export default function Flights() {
@@ -15,6 +16,7 @@ export default function Flights() {
   const [filterAvailability, setFilterAvailability] = useState(false);
   const [flights, setFlights] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const today = new Date().toISOString().split('T')[0];
   const navigate = useNavigate();
@@ -24,12 +26,11 @@ export default function Flights() {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:9000/api/flight', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(`${API_BASE_URL}/api/flights`);
         setFlights(response.data);
       } catch (error) {
         console.error('Failed to fetch flights:', error);
+        setError('Failed to load flights. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -41,6 +42,56 @@ export default function Flights() {
     setSelectedFlight(flight);
     setErrorMessage('');
   };
+
+  const confirmBooking = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/bookings`, {
+        type: 'FLIGHT',
+        itemId: selectedFlight.id,
+        numPersons: passengerCount,
+        totalAmount: selectedFlight.price * passengerCount,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      navigate('/payment', {
+        state: {
+          flight: selectedFlight,
+          members: passengerCount,
+          date: departureDate || today,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to create booking:', error);
+      if (error.response?.status === 401) {
+        setErrorMessage('Please login to book flights.');
+        navigate('/login');
+      } else {
+        setErrorMessage('Failed to create booking. Please try again.');
+      }
+    }
+  };
+
+  const filteredFlights = flights.filter((flight) => {
+    const flightDate = new Date(flight.departureTime).toISOString().split('T')[0];
+    return (
+      (!to || flight.destination.toLowerCase().includes(to.toLowerCase().trim())) &&
+      (!from || flight.origin.toLowerCase().includes(from.toLowerCase().trim())) &&
+      (!departureDate || flightDate === departureDate) &&
+      (!filterAirline || flight.airline.toLowerCase().includes(filterAirline.toLowerCase())) &&
+      (!filterAvailability || flight.availableSeats > 0)
+    );
+  });
+
+  const sortedFlights = [...filteredFlights].sort((a, b) => {
+    if (sortOrder === 'price') {
+      return a.price - b.price;
+    } else if (sortOrder === 'time') {
+      return new Date(a.departureTime) - new Date(b.departureTime);
+    }
+    return 0;
+  });
 
   return (
     <div className="page">
@@ -141,6 +192,17 @@ export default function Flights() {
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           <div className="loading"></div>
           <p style={{ marginTop: '1rem', color: '#666' }}>Searching for the best flights...</p>
+        </div>
+      ) : error ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem',
+          background: 'rgba(255, 255, 255, 0.8)',
+          borderRadius: '15px'
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+          <h3>Error Loading Flights</h3>
+          <p style={{ color: '#666' }}>{error}</p>
         </div>
       ) : (
         <div style={{
@@ -318,152 +380,6 @@ export default function Flights() {
                 ❌ Cancel
               </button>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const confirmBooking = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:9000/api/booking', {
-        type: 'FLIGHT',
-        itemId: selectedFlight.id,
-        numPersons: passengerCount,
-        totalAmount: selectedFlight.price * passengerCount,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      navigate('/payment', {
-        state: {
-          flight: selectedFlight,
-          members: passengerCount,
-          date: departureDate || today,
-        },
-      });
-    } catch (error) {
-      setErrorMessage('Failed to create booking.');
-    }
-  };
-
-  const filteredFlights = flights.filter((flight) => {
-    return (
-      (!to || flight.toLocation.toLowerCase().includes(to.toLowerCase().trim())) &&
-      (!from || flight.fromLocation.toLowerCase().includes(from.toLowerCase().trim())) &&
-      (!filterAirline || flight.airline.toLowerCase().includes(filterAirline.toLowerCase())) &&
-      (!filterAvailability || flight.availableSeats > 0)
-    );
-  });
-
-  const sortedFlights = [...filteredFlights].sort((a, b) => {
-    if (sortOrder === 'price') {
-      return a.price - b.price;
-    } else if (sortOrder === 'time') {
-      return a.departure.localeCompare(b.departure);
-    }
-    return 0;
-  });
-
-  return (
-    <div className="page">
-      <div className="date-range-container">
-        <input
-          className="label-box"
-          type="text"
-          placeholder="From?"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-        />
-        <input
-          className="label-box"
-          type="text"
-          placeholder="To?"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-        />
-        <input
-          className="date-box"
-          type="date"
-          value={departureDate}
-          onChange={(e) => setDepartureDate(e.target.value)}
-          min={today}
-        />
-      </div>
-
-      <div className="filters">
-        <label>Sort by:</label>
-        <select onChange={(e) => setSortOrder(e.target.value)} value={sortOrder}>
-          <option value="price">Price</option>
-          <option value="time">Departure Time</option>
-        </select>
-        <label>Filter by Airline:</label>
-        <input
-          type="text"
-          placeholder="Airline"
-          value={filterAirline}
-          onChange={(e) => setFilterAirline(e.target.value)}
-        />
-        <label>
-          Available Flights Only
-          <input
-            type="checkbox"
-            checked={filterAvailability}
-            onChange={() => setFilterAvailability(!filterAvailability)}
-          />
-        </label>
-      </div>
-
-      <h2>Book Your Flights</h2>
-
-      <div className="card-list">
-        {sortedFlights.length === 0 ? (
-          <p>No flights found for the selected route.</p>
-        ) : (
-          sortedFlights.map((flight) => (
-            <div key={flight.id} className="card">
-              <img
-                src={flight.image}
-                alt={flight.route}
-                style={{ height: '200px', objectFit: 'cover' }}
-              />
-              <p>{flight.route}</p>
-              <p>Airline: {flight.airline}</p>
-              <p>Price: ₹{flight.price}</p>
-              <p>Duration: {flight.duration}</p>
-              <p>Departure: {flight.departure}</p>
-              <p>Arrival: {flight.arrival}</p>
-              <p>{flight.availableSeats > 0 ? `Seats Available: ${flight.availableSeats}` : 'Sold Out'}</p>
-              <button
-                className="btn"
-                onClick={() => handleBookClick(flight)}
-                disabled={flight.availableSeats <= 0}
-              >
-                Book Flight
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
-      {selectedFlight && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Enter Number of Passengers</h3>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={passengerCount}
-              onChange={(e) => setPassengerCount(parseInt(e.target.value) || 1)}
-              className="label-box"
-            />
-            <div style={{ marginTop: '10px' }}>
-              <button className="btn" onClick={confirmBooking}>Confirm</button>
-              <button className="btn btn-outline" onClick={() => setSelectedFlight(null)}>Cancel</button>
-            </div>
-            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
           </div>
         </div>
       )}

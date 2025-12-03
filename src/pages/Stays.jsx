@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import '../style/main.css';
 
 export default function Stays() {
@@ -22,7 +23,7 @@ export default function Stays() {
           console.error('No token found. Please log in.');
           return;
         }
-        const response = await axios.get('http://localhost:9000/api/stay', {
+        const response = await axios.get(`${API_BASE_URL}/api/hotels`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setStays(response.data);

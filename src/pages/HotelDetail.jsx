@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import '../style/main.css';
 
 export default function HotelDetail() {
@@ -47,7 +48,7 @@ export default function HotelDetail() {
         return;
       }
 
-      await axios.post('http://localhost:9000/api/booking', {
+      await axios.post(`${API_BASE_URL}/api/bookings`, {
         type: 'STAY',
         itemId: stay.id,
         numPersons,
