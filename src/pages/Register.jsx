@@ -39,6 +39,7 @@ export default function Register() {
         name,
         email,
         password,
+        phone,
       });
 
       if (response.data.message === 'User registered successfully') {
